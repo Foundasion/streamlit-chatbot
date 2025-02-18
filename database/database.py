@@ -20,6 +20,9 @@ def init_db():
     """Initialize database, creating tables if they don't exist"""
     Base.metadata.create_all(bind=engine)
 
+# Initialize database tables
+init_db()
+
 @contextmanager
 def get_db() -> Generator[Session, None, None]:
     """Get database session"""
@@ -64,6 +67,12 @@ class DatabaseManager:
             if search:
                 query = query.filter(Chat.name.ilike(f"%{search}%"))
             return db.execute(query).scalars().all()
+
+    @staticmethod
+    def get_chat(chat_id: str) -> Optional[Chat]:
+        """Get a specific chat by ID"""
+        with get_db() as db:
+            return db.query(Chat).filter(Chat.id == chat_id).first()
 
     @staticmethod
     def create_chat(user_id: str, name: str) -> Chat:

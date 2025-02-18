@@ -9,17 +9,50 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
    - Real-time message streaming
    - Responsive sidebar for chat management
    - Custom CSS for enhanced styling
+   - Dialog-based edit/delete functionality [Needs Testing]
+   - Chat export to JSON [Needs Testing]
+   - User profile management with avatars [Needs Testing]
 
 2. **Database**: 
-   - PostgreSQL for persistent chat history
-   - SQLAlchemy ORM for efficient operations
-   - Case-insensitive chat search
-   - User profile management
+   - PostgreSQL for persistent chat history ✓
+   - SQLAlchemy ORM for efficient operations ✓
+   - Case-insensitive chat search ✓
+   - User profile management [Needs Testing]
+   - Automatic chat naming [Needs Testing]
+   - Message turn tracking [Needs Testing]
 
 3. **LLM Integration**: 
-   - Claude integration with abstraction layer
-   - Easy to extend with different providers
-   - Context-aware responses
+   - Claude integration with abstraction layer ✓
+   - Context-aware responses ✓
+   - Automatic chat naming after 2 messages [Needs Testing]
+   - Chat name reassessment at 6 messages [Needs Testing]
+
+## Testing Status
+
+### Needs Validation
+1. Dialog Interactions
+   - Edit chat functionality
+   - Delete chat confirmation
+   - Profile editing dialog
+   - Export chat dialog
+
+2. Chat Management
+   - Automatic chat naming triggers
+   - Chat name reassessment
+   - Empty chat handling
+   - Search functionality
+
+3. UI Components
+   - Sidebar scrolling behavior
+   - Button interactions
+   - Dialog layouts
+   - Mobile responsiveness
+
+4. State Management
+   - Session persistence
+   - Chat switching
+   - Search state
+   - Profile updates
 
 ## Quick Start
 
@@ -73,6 +106,11 @@ streamlit_chatbot/
 │   ├── __init__.py
 │   ├── models.py             # SQLAlchemy models
 │   └── database.py           # Database operations
+├── ui/                      # UI components
+│   ├── __init__.py
+│   ├── components.py        # Reusable UI components
+│   ├── state.py            # Session state management
+│   └── styles.py           # Additional styling
 ├── static/                   # Static assets
 │   └── styles.css            # Custom CSS
 ├── tests/                    # Test suite

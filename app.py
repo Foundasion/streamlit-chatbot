@@ -1,61 +1,134 @@
+from typing import Optional
 import streamlit as st
-from llm import get_llm_provider
-
-# Initialize session state for message history if it doesn't exist
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
 # Configure the page
 st.set_page_config(
-    page_title="AI Chatbot",
-    page_icon="💬",
-    layout="wide"
+    page_title="AI Hub",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("AI Chatbot")
+from llm import get_llm_provider
+from database.database import DatabaseManager
+from ui.state import SessionState
+from ui.components import render_sidebar, format_message, should_name_chat
+from ui.styles import inject_custom_css
+
+# Initialize session state
+SessionState.init_state()
+
+# Inject custom CSS
+st.markdown(inject_custom_css(), unsafe_allow_html=True)
+
+st.title("AI Hub")
 
 # Initialize LLM provider
 llm = get_llm_provider()
 
-# Display chat messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+def has_empty_chat(user_id: str) -> Optional[str]:
+    """Check for empty chats and return the first empty chat ID if found."""
+    chats = DatabaseManager.get_chats(user_id)
+    for chat in chats:
+        if len(DatabaseManager.get_messages(str(chat.id))) == 0:
+            return str(chat.id)
+    return None
 
-# Chat input
-if prompt := st.chat_input("What's on your mind?"):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# Get or create current chat
+current_chat_id = SessionState.get_current_chat()
+if not current_chat_id:
+    user_info = SessionState.get_user_info()
+    empty_chat_id = has_empty_chat(user_info["id"])
     
-    # Display user message
-    with st.chat_message("user"):
-        st.write(prompt)
+    if empty_chat_id:
+        # Use existing empty chat
+        current_chat_id = empty_chat_id
+    else:
+        # Create new chat only if no empty chats exist
+        chat = DatabaseManager.create_chat(user_info["id"], "New Chat")
+        current_chat_id = str(chat.id)
     
-    # Display assistant response with loading indicator
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        with st.spinner("Thinking..."):
-            # Get response from LLM
-            response = llm.get_response(
-                prompt,
-                context=st.session_state.messages[:-1]  # Exclude the latest message
+    SessionState.set_current_chat(current_chat_id)
+
+# Get current chat
+chat = DatabaseManager.get_chat(current_chat_id)
+if chat:
+    # Get chat messages
+    messages = DatabaseManager.get_messages(current_chat_id)
+    
+    # Display messages
+    for message in messages:
+        with st.chat_message(message.role):
+            st.write(message.content)
+            st.caption(f"{message.created_at.strftime('%I:%M %p')}")
+    
+    # Chat input
+    if prompt := st.chat_input("What's on your mind?"):
+        # Add user message
+        turn_number = max([m.turn_number for m in messages]) + 1 if messages else 0
+        user_message = DatabaseManager.add_message(
+            current_chat_id,
+            "user",
+            prompt,
+            turn_number
+        )
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.write(prompt)
+            st.caption(f"{user_message.created_at.strftime('%I:%M %p')}")
+        
+        # Get and display assistant response
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            with st.spinner("Thinking..."):
+                # Get response from LLM
+                response = llm.get_response(
+                    prompt,
+                    context=[{
+                        "role": m.role,
+                        "content": m.content
+                    } for m in messages]
+                )
+                
+                # Add assistant message
+                assistant_message = DatabaseManager.add_message(
+                    current_chat_id,
+                    "assistant",
+                    response,
+                    turn_number
+                )
+                
+                # Display response
+                message_placeholder.write(response)
+                st.caption(f"{assistant_message.created_at.strftime('%I:%M %p')}")
+        
+        # Update counters
+        SessionState.increment_counters("assistant")
+        
+        # Check if chat should be named or renamed
+        updated_chat = DatabaseManager.get_chat(current_chat_id)
+        if should_name_chat(messages, updated_chat):
+            # Get chat name from LLM
+            chat_context = "\n".join([
+                f"{m.role}: {m.content}" for m in 
+                DatabaseManager.get_messages(current_chat_id)
+            ])
+            name_prompt = f"""Based on this conversation, suggest a short (2-5 words) name for the chat that captures its main topic or purpose. Only respond with the name, nothing else:
+
+{chat_context}"""
+            chat_name = llm.get_response(name_prompt, []).strip()
+            
+            # Update chat name
+            DatabaseManager.update_chat(
+                current_chat_id,
+                name=chat_name,
+                is_named_by_llm=True
             )
-            message_placeholder.write(response)
-    
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
-
-# Add a sidebar with basic instructions
-with st.sidebar:
-    st.header("About")
-    st.write("""
-    This is a simple AI chatbot built with Streamlit.
-    It uses Claude to generate responses to your messages.
-    
-    Your chat history is preserved during the session.
-    """)
-    
-    # Add a clear chat button
-    if st.button("Clear Chat"):
-        st.session_state.messages = []
+        
         st.rerun()
+else:
+    st.info("Select a chat from the sidebar or create a new one to get started.")
+
+# Render sidebar with chat list and profile
+render_sidebar()
