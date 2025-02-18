@@ -73,6 +73,42 @@ def export_chat(chat_id: str) -> dict:
         } for m in messages]
     }
 
+@st.dialog("Edit Chat")
+def edit_chat_dialog(chat_id: str, chat_name: str):
+    """Dialog for editing chat name."""
+    with st.form("edit_form"):
+        new_name = st.text_input("Chat Name", value=chat_name)
+        if st.form_submit_button("Save"):
+            DatabaseManager.update_chat(chat_id, name=new_name)
+            st.rerun()
+
+@st.dialog("Export Chat")
+def export_chat_dialog(chat_id: str, chat_name: str):
+    """Dialog for exporting chat data."""
+    chat_data = export_chat(chat_id)
+    st.json(chat_data)
+    st.download_button(
+        "Download JSON",
+        data=json.dumps(chat_data, indent=2),
+        file_name=f"chat_{chat_name}_{datetime.now().strftime('%Y%m%d')}.json",
+        mime="application/json"
+    )
+
+@st.dialog("Delete Chat")
+def delete_chat_dialog(chat_id: str, chat_name: str):
+    """Dialog for confirming chat deletion."""
+    st.warning(f"Are you sure you want to delete '{chat_name}'?")
+    cols = st.columns(2)
+    with cols[0]:
+        if st.button("Yes"):
+            DatabaseManager.delete_chat(chat_id)
+            if SessionState.get_current_chat() == chat_id:
+                SessionState.set_current_chat(None)
+            st.rerun()
+    with cols[1]:
+        if st.button("No"):
+            st.rerun()
+
 def render_chat_list():
     """Render the list of chat sessions."""
     user_info = SessionState.get_user_info()
@@ -102,41 +138,30 @@ def render_chat_list():
             # Edit button
             with cols[1]:
                 if st.button("Edit", key=f"edit_{chat_id}"):
-                    with st.dialog("Edit Chat"):
-                        with st.form("edit_form"):
-                            new_name = st.text_input("Chat Name", value=chat.name)
-                            if st.form_submit_button("Save"):
-                                DatabaseManager.update_chat(chat_id, name=new_name)
-                                st.rerun()
+                    edit_chat_dialog(chat_id, chat.name)
             
             # Export button
             with cols[2]:
                 if st.button("Export", key=f"export_{chat_id}"):
-                    chat_data = export_chat(chat_id)
-                    with st.dialog("Export Chat"):
-                        st.json(chat_data)
-                        st.download_button(
-                            "Download JSON",
-                            data=json.dumps(chat_data, indent=2),
-                            file_name=f"chat_{chat.name}_{chat.updated_at.strftime('%Y%m%d')}.json",
-                            mime="application/json"
-                        )
+                    export_chat_dialog(chat_id, chat.name)
             
             # Delete button
             with cols[3]:
                 if st.button("Delete", key=f"delete_{chat_id}"):
-                    with st.dialog("Delete Chat"):
-                        st.warning(f"Are you sure you want to delete '{chat.name}'?")
-                        cols = st.columns(2)
-                        with cols[0]:
-                            if st.button("Yes", key=f"confirm_{chat_id}"):
-                                DatabaseManager.delete_chat(chat_id)
-                                if SessionState.get_current_chat() == chat_id:
-                                    SessionState.set_current_chat(None)
-                                st.rerun()
-                        with cols[1]:
-                            if st.button("No", key=f"cancel_{chat_id}"):
-                                st.rerun()
+                    delete_chat_dialog(chat_id, chat.name)
+
+@st.dialog("Edit Profile")
+def edit_profile_dialog(user_info: dict):
+    """Dialog for editing user profile."""
+    with st.form("edit_profile"):
+        new_name = st.text_input("Name", value=user_info["name"])
+        new_avatar = st.text_input("Avatar URL", value=user_info["avatar_url"] or "")
+        if st.form_submit_button("Save"):
+            SessionState.update_user_info(
+                name=new_name,
+                avatar_url=new_avatar if new_avatar else None
+            )
+            st.rerun()
 
 def render_profile_bar():
     """Render the user profile section."""
@@ -156,16 +181,7 @@ def render_profile_bar():
     # User name and edit button
     with cols[1]:
         if st.button(f"{user_info['name']}", key="profile_button"):
-            with st.dialog("Edit Profile"):
-                with st.form("edit_profile"):
-                    new_name = st.text_input("Name", value=user_info["name"])
-                    new_avatar = st.text_input("Avatar URL", value=user_info["avatar_url"] or "")
-                    if st.form_submit_button("Save"):
-                        SessionState.update_user_info(
-                            name=new_name,
-                            avatar_url=new_avatar if new_avatar else None
-                        )
-                        st.rerun()
+            edit_profile_dialog(user_info)
 
 def format_message(role: str, content: str) -> str:
     """Format a message for display."""
