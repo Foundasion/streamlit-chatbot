@@ -1,8 +1,3 @@
-# Environment variables
-.env
-.env.*
-!.env.example
-
 # Python
 __pycache__/
 *.py[cod]
@@ -26,33 +21,23 @@ wheels/
 *.egg
 
 # Virtual Environment
-venv/
+.env
+.venv
 env/
+venv/
 ENV/
-.venv/
+env.bak/
+venv.bak/
 
-# IDE settings
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.project
-.pydevproject
-.settings/
-
-# Streamlit
-.streamlit/
-
-# Logs and databases
-*.log
-*.sqlite
-*.db
-
-# OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+
+# Project specific
+*.db
+*.sqlite3
+*.log
+.streamlit/

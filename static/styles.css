@@ -1,0 +1,105 @@
+/* Sidebar customization */
+.stSidebar {
+    width: 300px !important;
+}
+
+/* Search bar styling */
+.search-container {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(49, 51, 63, 0.2);
+}
+
+.search-container .stTextInput input {
+    height: 50px;
+    border-radius: 25px;
+    padding-left: 20px;
+    background-color: #f0f2f6;
+}
+
+/* Chat history styling */
+.chat-list {
+    padding: 0.5rem;
+    overflow-y: auto;
+}
+
+.chat-item {
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.chat-item:hover {
+    background-color: #f0f2f6;
+}
+
+/* Profile bar styling */
+.profile-container {
+    position: fixed;
+    bottom: 0;
+    width: 300px;
+    height: 50px;
+    background-color: #ffffff;
+    border-top: 1px solid rgba(49, 51, 63, 0.2);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.profile-image {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-name {
+    margin-left: 1rem;
+    font-weight: 500;
+    color: #31333f;
+}
+
+/* Profile modal styling */
+.profile-modal {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Chat interface styling */
+.chat-message {
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #f0f2f6;
+    margin-left: auto;
+}
+
+.assistant-message {
+    background-color: #e8f0fe;
+    margin-right: auto;
+}
+
+/* Button styling */
+.custom-button {
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s;
+}
+
+.custom-button:hover {
+    filter: brightness(0.95);
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
