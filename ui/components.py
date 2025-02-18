@@ -10,31 +10,28 @@ from .state import SessionState
 def render_sidebar():
     """Render the main sidebar container."""
     with st.sidebar:
-        # Header with New Chat button
-        col1, col2 = st.columns([3, 2])
-        with col1:
-            st.header("Chats")
-        with col2:
-            st.write("")  # Add spacing to align with header
-            if st.button("✏️ New", key="new_chat", use_container_width=True):
-                user_info = SessionState.get_user_info()
-                empty_chat_id = has_empty_chat(user_info["id"])
-                if empty_chat_id:
-                    # Use existing empty chat
-                    SessionState.set_current_chat(empty_chat_id)
-                else:
-                    # Create new chat only if no empty chats exist
-                    chat = DatabaseManager.create_chat(user_info["id"], "New Chat")
-                    SessionState.set_current_chat(str(chat.id))
-                st.rerun()
+        st.header("Chats")
         
-        # Fixed search bar at top
+        # New Chat button
+        if st.button("New Chat", key="new_chat"):
+            user_info = SessionState.get_user_info()
+            empty_chat_id = has_empty_chat(user_info["id"])
+            if empty_chat_id:
+                # Use existing empty chat
+                SessionState.set_current_chat(empty_chat_id)
+            else:
+                # Create new chat only if no empty chats exist
+                chat = DatabaseManager.create_chat(user_info["id"], "New Chat")
+                SessionState.set_current_chat(str(chat.id))
+            st.rerun()
+        
+        # Search bar
         render_search_bar()
         
-        # Scrollable chat list
+        # Chat list
         render_chat_list()
         
-        # Fixed profile bar at bottom
+        # Profile section
         render_profile_bar()
 
 def render_search_bar():
@@ -78,135 +75,97 @@ def export_chat(chat_id: str) -> dict:
 
 def render_chat_list():
     """Render the list of chat sessions."""
-    # Get user's chats
     user_info = SessionState.get_user_info()
     chats = DatabaseManager.get_chats(
         user_info["id"],
         search=SessionState.get_search_query()
     )
     
-    # Create scrollable container for chat list
-    with st.container():
-        st.markdown('<div class="chat-list-container">', unsafe_allow_html=True)
-        for chat in chats:
-            st.markdown('<div class="chat-list-item">', unsafe_allow_html=True)
-            col1, col2, col3, col4 = st.columns([5, 1, 1, 1], gap='small')
-            chat_id = str(chat.id)
+    for chat in chats:
+        chat_id = str(chat.id)
+        
+        # Format timestamp
+        timestamp = chat.updated_at.strftime("%I:%M %p")
+        if chat.updated_at.date() != datetime.now().date():
+            timestamp = chat.updated_at.strftime("%b %d, %I:%M %p")
+        
+        # Chat container
+        with st.container():
+            cols = st.columns([4, 1, 1, 1])
             
-            # Chat name and timestamp
-            with col1:
-                # Format timestamp
-                timestamp = chat.updated_at.strftime("%I:%M %p")
-                if chat.updated_at.date() != datetime.now().date():
-                    timestamp = chat.updated_at.strftime("%b %d, %I:%M %p")
-                
-                # Display chat name with timestamp
-                if st.button(
-                    f"{chat.name}",
-                    key=f"chat_{chat_id}",
-                    use_container_width=True, help=f'{timestamp}',
-                ):
+            # Chat name and select button
+            with cols[0]:
+                if st.button(f"{chat.name}", key=f"chat_{chat_id}", help=timestamp):
                     SessionState.set_current_chat(chat_id)
                     st.rerun()
             
             # Edit button
-            with col2:
-                if st.button("✏️", key=f"edit_{chat_id}"):
-                    with st.dialog(f"Edit Chat - {chat.name}", key=f"edit_dialog_{chat_id}"):
-                        with st.form(key=f"edit_form_{chat_id}"):
-                            new_name = st.text_input(
-                                "Chat Name",
-                                value=chat.name,
-                                key=f"rename_{chat_id}"
-                            )
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.form_submit_button("Save"):
-                                    DatabaseManager.update_chat(chat_id, name=new_name)
-                                    st.rerun()
-                            with col2:
-                                if st.form_submit_button("Cancel"):
-                                    st.rerun()
+            with cols[1]:
+                if st.button("Edit", key=f"edit_{chat_id}"):
+                    with st.dialog("Edit Chat"):
+                        with st.form("edit_form"):
+                            new_name = st.text_input("Chat Name", value=chat.name)
+                            if st.form_submit_button("Save"):
+                                DatabaseManager.update_chat(chat_id, name=new_name)
+                                st.rerun()
             
             # Export button
-            with col3:
-                if st.button("📥", key=f"export_{chat_id}", help="Export chat"):
+            with cols[2]:
+                if st.button("Export", key=f"export_{chat_id}"):
                     chat_data = export_chat(chat_id)
-                    with st.dialog("Export Chat", key=f"export_dialog_{chat_id}"):
+                    with st.dialog("Export Chat"):
                         st.json(chat_data)
                         st.download_button(
                             "Download JSON",
                             data=json.dumps(chat_data, indent=2),
                             file_name=f"chat_{chat.name}_{chat.updated_at.strftime('%Y%m%d')}.json",
-                            mime="application/json",
-                            key=f"download_{chat_id}"
+                            mime="application/json"
                         )
             
             # Delete button
-            with col4:
-                if st.button("🗑️", key=f"delete_{chat_id}"):
-                    with st.dialog("Delete Chat", key=f"delete_dialog_{chat_id}"):
+            with cols[3]:
+                if st.button("Delete", key=f"delete_{chat_id}"):
+                    with st.dialog("Delete Chat"):
                         st.warning(f"Are you sure you want to delete '{chat.name}'?")
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("Yes", key=f"confirm_delete_{chat_id}"):
+                        cols = st.columns(2)
+                        with cols[0]:
+                            if st.button("Yes", key=f"confirm_{chat_id}"):
                                 DatabaseManager.delete_chat(chat_id)
                                 if SessionState.get_current_chat() == chat_id:
                                     SessionState.set_current_chat(None)
                                 st.rerun()
-                        with col2:
-                            if st.button("No", key=f"cancel_delete_{chat_id}"):
+                        with cols[1]:
+                            if st.button("No", key=f"cancel_{chat_id}"):
                                 st.rerun()
-            
-            # Close chat-list-item div
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Close chat-list-container div
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def render_profile_bar():
     """Render the user profile section."""
     user_info = SessionState.get_user_info()
     
-    # Create container with profile-section class
-    with st.container():
-        st.markdown('<div class="profile-section">', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([1, 4])
-        
-        # Avatar
-        with col1:
-            if user_info["avatar_url"]:
-                st.image(user_info["avatar_url"], width=40)
-            else:
-                st.markdown("👤")
-        
-        # User name as clickable button
-        with col2:
-            if st.button(f"{user_info['name']}", key="profile_button"):
-                with st.dialog("Edit Profile", key="profile_dialog"):
-                    with st.form("edit_profile"):
-                        new_name = st.text_input(
-                            "Name",
-                            value=user_info["name"]
+    st.divider()
+    
+    cols = st.columns([1, 4])
+    
+    # Avatar
+    with cols[0]:
+        if user_info["avatar_url"]:
+            st.image(user_info["avatar_url"], width=40)
+        else:
+            st.markdown("👤")
+    
+    # User name and edit button
+    with cols[1]:
+        if st.button(f"{user_info['name']}", key="profile_button"):
+            with st.dialog("Edit Profile"):
+                with st.form("edit_profile"):
+                    new_name = st.text_input("Name", value=user_info["name"])
+                    new_avatar = st.text_input("Avatar URL", value=user_info["avatar_url"] or "")
+                    if st.form_submit_button("Save"):
+                        SessionState.update_user_info(
+                            name=new_name,
+                            avatar_url=new_avatar if new_avatar else None
                         )
-                        new_avatar = st.text_input(
-                            "Avatar URL",
-                            value=user_info["avatar_url"] or ""
-                        )
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.form_submit_button("Save"):
-                                SessionState.update_user_info(
-                                    name=new_name,
-                                    avatar_url=new_avatar if new_avatar else None
-                                )
-                                st.rerun()
-                        with col2:
-                            if st.form_submit_button("Cancel"):
-                                st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                        st.rerun()
 
 def format_message(role: str, content: str) -> str:
     """Format a message for display."""

@@ -13,13 +13,9 @@ from llm import get_llm_provider
 from database.database import DatabaseManager
 from ui.state import SessionState
 from ui.components import render_sidebar, format_message, should_name_chat
-from ui.styles import inject_custom_css
 
 # Initialize session state
 SessionState.init_state()
-
-# Inject custom CSS
-st.markdown(inject_custom_css(), unsafe_allow_html=True)
 
 st.title("AI Hub")
 
@@ -59,7 +55,7 @@ if chat:
     # Display messages
     for message in messages:
         with st.chat_message(message.role):
-            st.write(message.content)
+            st.markdown(message.content)
             st.caption(f"{message.created_at.strftime('%I:%M %p')}")
     
     # Chat input
@@ -75,7 +71,7 @@ if chat:
         
         # Display user message
         with st.chat_message("user"):
-            st.write(prompt)
+            st.markdown(prompt)
             st.caption(f"{user_message.created_at.strftime('%I:%M %p')}")
         
         # Get and display assistant response
@@ -100,7 +96,7 @@ if chat:
                 )
                 
                 # Display response
-                message_placeholder.write(response)
+                message_placeholder.markdown(response)
                 st.caption(f"{assistant_message.created_at.strftime('%I:%M %p')}")
         
         # Update counters
