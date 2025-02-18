@@ -1,5 +1,4 @@
 import streamlit as st
-import asyncio
 from llm import get_llm_provider
 
 # Initialize session state for message history if it doesn't exist
@@ -37,10 +36,10 @@ if prompt := st.chat_input("What's on your mind?"):
         message_placeholder = st.empty()
         with st.spinner("Thinking..."):
             # Get response from LLM
-            response = asyncio.run(llm.get_response(
+            response = llm.get_response(
                 prompt,
                 context=st.session_state.messages[:-1]  # Exclude the latest message
-            ))
+            )
             message_placeholder.write(response)
     
     # Add assistant response to chat history

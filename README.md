@@ -58,6 +58,74 @@ To add support for a different LLM provider:
 2. Implement the required methods: `_initialize_model()` and `get_response()`
 3. Update the `get_llm_provider()` factory function to return your new provider
 
+## Roadmap & Future Improvements
+
+### Persistent Chat History
+- PostgreSQL/MongoDB integration for chat storage
+- User session management and authentication
+- Chat history search and filtering capabilities
+- Export/import conversation functionality
+
+### MCP Tool Integration
+- Slack integration for team collaboration
+  - Send/receive messages
+  - Channel monitoring
+  - Thread management
+- Email integration for notifications
+  - Send email summaries
+  - Process email inquiries
+  - Attachment handling
+- Google Docs integration
+  - Document processing and analysis
+  - Content generation
+  - Collaborative editing
+- Custom MCP servers for each integration
+  - Modular server architecture
+  - Secure credential management
+  - Rate limiting and error handling
+
+### Vector Database Integration
+- Pinecone setup for semantic search
+  - Document embedding and retrieval
+  - Similar conversation finding
+  - Knowledge base integration
+- Chat history vectorization
+  - Contextual conversation search
+  - Pattern recognition
+  - User behavior analysis
+- Enhanced context management
+  - Dynamic context window
+  - Relevance scoring
+  - Memory optimization
+
+## Development Timeline
+
+### Phase 1 (Current): Basic Chatbot ✓
+- Streamlit interface with native chat components
+- Claude integration with abstraction layer
+- Session-based chat history
+- Basic error handling and user feedback
+
+### Phase 2: Persistence & Search
+- Database integration for permanent storage
+- Vector database setup for semantic search
+- Enhanced chat history management
+- User authentication system
+
+### Phase 3: MCP Integration
+- Tool server implementation
+- External service connections
+- Enhanced context handling
+- Advanced error recovery
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
 ## License
 
 MIT
