@@ -6,7 +6,8 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
 
 1. **Frontend**: 
    - Clean, intuitive chat interface with native Streamlit components ✓
-   - Message streaming [Needs Implementation]
+   - Message streaming with real-time responses ✓
+   - Message action buttons UI implementation ✓
    - Responsive sidebar for chat management ✓
    - Dialog-based operations (edit/delete/export) ✓
    - User profile management with avatars ✓
@@ -57,10 +58,21 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
    - User settings maintenance
 
 ### Needs Implementation
-1. Message Streaming
-   - Real-time response streaming
-   - Typing indicators
-   - Progress feedback
+1. UI Enhancements
+   - Chat Selection Highlighting
+     * Highlight selected chat in sidebar
+     * Improve visual focus
+   - Chat Name Management
+     * Add chat name button in header
+     * Move edit functionality from sidebar
+   - Message Action Functionality
+     * Implement like/dislike system
+     * Add copy feature
+     * Enable response regeneration
+   - Frontend Styling
+     * Improve overall appearance
+     * Enhance visual hierarchy
+     * Refine component layouts
 
 2. Search Enhancements
    - Real-time filtering
