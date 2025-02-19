@@ -98,15 +98,15 @@ def export_chat_dialog(chat_id: str, chat_name: str):
 def delete_chat_dialog(chat_id: str, chat_name: str):
     """Dialog for confirming chat deletion."""
     st.warning(f"Are you sure you want to delete '{chat_name}'?")
-    cols = st.columns(2)
+    cols = st.columns(2, gap='medium', vertical_alignment='center')
     with cols[0]:
-        if st.button("Yes"):
+        if st.button("Yes", use_container_width=True):
             DatabaseManager.delete_chat(chat_id)
             if SessionState.get_current_chat() == chat_id:
                 SessionState.set_current_chat(None)
             st.rerun()
     with cols[1]:
-        if st.button("No"):
+        if st.button("No", use_container_width=True):
             st.rerun()
 
 def render_chat_list():
@@ -131,23 +131,23 @@ def render_chat_list():
             
             # Chat name and select button
             with cols[0]:
-                if st.button(f"{chat.name}", key=f"chat_{chat_id}", help=timestamp):
+                if st.button(f"{chat.name}", key=f"chat_{chat_id}", help=timestamp, use_container_width=True):
                     SessionState.set_current_chat(chat_id)
                     st.rerun()
             
             # Edit button
             with cols[1]:
-                if st.button("Edit", key=f"edit_{chat_id}"):
+                if st.button(":pencil2:", key=f"edit_{chat_id}", use_container_width=True):
                     edit_chat_dialog(chat_id, chat.name)
             
             # Export button
             with cols[2]:
-                if st.button("Export", key=f"export_{chat_id}"):
+                if st.button(":floppy_disk:", key=f"export_{chat_id}", use_container_width=True):
                     export_chat_dialog(chat_id, chat.name)
             
             # Delete button
             with cols[3]:
-                if st.button("Delete", key=f"delete_{chat_id}"):
+                if st.button(":wastebasket:", key=f"delete_{chat_id}", use_container_width=True):
                     delete_chat_dialog(chat_id, chat.name)
 
 @st.dialog("Edit Profile")
@@ -174,13 +174,13 @@ def render_profile_bar():
     # Avatar
     with cols[0]:
         if user_info["avatar_url"]:
-            st.image(user_info["avatar_url"], width=40)
+            st.image(user_info["avatar_url"], width=100)
         else:
             st.markdown("👤")
     
     # User name and edit button
     with cols[1]:
-        if st.button(f"{user_info['name']}", key="profile_button"):
+        if st.button(f"{user_info['name']}", key="profile_button", use_container_width=True):
             edit_profile_dialog(user_info)
 
 def format_message(role: str, content: str) -> str:

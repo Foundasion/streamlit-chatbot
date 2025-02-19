@@ -5,13 +5,13 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
 ## Features & Architecture
 
 1. **Frontend**: 
-   - Clean, intuitive chat interface with Streamlit components
-   - Real-time message streaming
-   - Responsive sidebar for chat management
-   - Custom CSS for enhanced styling
-   - Dialog-based edit/delete functionality [Needs Testing]
-   - Chat export to JSON [Needs Testing]
-   - User profile management with avatars [Needs Testing]
+   - Clean, intuitive chat interface with native Streamlit components ✓
+   - Message streaming [Needs Implementation]
+   - Responsive sidebar for chat management ✓
+   - Dialog-based operations (edit/delete/export) ✓
+   - User profile management with avatars ✓
+   - Markdown message formatting ✓
+   - Long message handling ✓
 
 2. **Database**: 
    - PostgreSQL for persistent chat history ✓
@@ -29,30 +29,44 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
 
 ## Testing Status
 
-### Needs Validation
+### Validated Features ✓
 1. Dialog Interactions
    - Edit chat functionality
    - Delete chat confirmation
    - Profile editing dialog
    - Export chat dialog
+   - Dialog transitions and styling
 
 2. Chat Management
    - Automatic chat naming triggers
    - Chat name reassessment
    - Empty chat handling
-   - Search functionality
+   - Basic search functionality
 
 3. UI Components
    - Sidebar scrolling behavior
    - Button interactions
    - Dialog layouts
    - Mobile responsiveness
+   - Message formatting and display
 
 4. State Management
    - Session persistence
    - Chat switching
-   - Search state
    - Profile updates
+   - User settings maintenance
+
+### Needs Implementation
+1. Message Streaming
+   - Real-time response streaming
+   - Typing indicators
+   - Progress feedback
+
+2. Search Enhancements
+   - Real-time filtering
+   - Search term persistence
+   - Inexact matching
+   - Results feedback
 
 ## Quick Start
 
