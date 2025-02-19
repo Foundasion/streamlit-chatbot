@@ -159,7 +159,7 @@ def render_profile_bar():
     
     st.divider()
     
-    cols = st.columns([1, 4])
+    cols = st.columns([1, 4], vertical_alignment='center')
     
     # Avatar
     with cols[0]:

@@ -26,7 +26,7 @@ def has_empty_chat(user_id: str) -> Optional[str]:
     return None
 
 # Create a header row with title and New Chat button
-col1, col2 = st.columns([6, 1], vertical_alignment='top')
+col1, col2 = st.columns([6, 1], vertical_alignment='center')
 with col1:
     st.title("AI Hub")
 with col2:
