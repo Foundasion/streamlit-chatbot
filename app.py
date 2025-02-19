@@ -17,11 +17,6 @@ from ui.components import render_sidebar, format_message, should_name_chat
 # Initialize session state
 SessionState.init_state()
 
-st.title("AI Hub")
-
-# Initialize LLM provider
-llm = get_llm_provider()
-
 def has_empty_chat(user_id: str) -> Optional[str]:
     """Check for empty chats and return the first empty chat ID if found."""
     chats = DatabaseManager.get_chats(user_id)
@@ -29,6 +24,42 @@ def has_empty_chat(user_id: str) -> Optional[str]:
         if len(DatabaseManager.get_messages(str(chat.id))) == 0:
             return str(chat.id)
     return None
+
+# Create a header row with title and New Chat button
+col1, col2 = st.columns([6, 1], vertical_alignment='top')
+with col1:
+    st.title("AI Hub")
+with col2:
+    # Get current chat and check if it's a "New Chat"
+    current_chat_id = SessionState.get_current_chat()
+    current_chat = DatabaseManager.get_chat(current_chat_id) if current_chat_id else None
+    is_empty_new_chat = False
+    if current_chat and current_chat.name == "New Chat":
+        messages = DatabaseManager.get_messages(current_chat_id)
+        is_empty_new_chat = len(messages) == 0
+
+    # New Chat button with disable logic
+    button_disabled = is_empty_new_chat
+    tooltip = "Cannot create new chat while current chat is empty" if button_disabled else None
+    if st.button("New Chat", key="new_chat", disabled=button_disabled, help=tooltip, use_container_width=True):
+        user_info = SessionState.get_user_info()
+        empty_chat_id = has_empty_chat(user_info["id"])
+        
+        if empty_chat_id:
+            # Get the empty chat to check its name
+            empty_chat = DatabaseManager.get_chat(empty_chat_id)
+            if empty_chat.name == "New Chat":
+                # Use existing empty "New Chat"
+                SessionState.set_current_chat(empty_chat_id)
+                st.rerun()
+        
+        # Create new chat only if no empty "New Chat" exists
+        chat = DatabaseManager.create_chat(user_info["id"], "New Chat")
+        SessionState.set_current_chat(str(chat.id))
+        st.rerun()
+
+# Initialize LLM provider
+llm = get_llm_provider()
 
 # Get or create current chat
 current_chat_id = SessionState.get_current_chat()

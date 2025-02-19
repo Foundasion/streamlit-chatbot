@@ -10,20 +10,7 @@ from .state import SessionState
 def render_sidebar():
     """Render the main sidebar container."""
     with st.sidebar:
-        st.header("Chats")
-        
-        # New Chat button
-        if st.button("New Chat", key="new_chat"):
-            user_info = SessionState.get_user_info()
-            empty_chat_id = has_empty_chat(user_info["id"])
-            if empty_chat_id:
-                # Use existing empty chat
-                SessionState.set_current_chat(empty_chat_id)
-            else:
-                # Create new chat only if no empty chats exist
-                chat = DatabaseManager.create_chat(user_info["id"], "New Chat")
-                SessionState.set_current_chat(str(chat.id))
-            st.rerun()
+        st.header("Chats", divider='rainbow')
         
         # Search bar
         render_search_bar()
@@ -37,7 +24,7 @@ def render_sidebar():
 def render_search_bar():
     """Render the chat search functionality."""
     search_query = st.text_input(
-        "Search chats",
+        "", label_visibility="collapsed",
         value=SessionState.get_search_query(),
         placeholder="Search by chat name...",
         key="chat_search"
@@ -125,13 +112,16 @@ def render_chat_list():
         if chat.updated_at.date() != datetime.now().date():
             timestamp = chat.updated_at.strftime("%b %d, %I:%M %p")
         
-        # Chat container
+        # Check if this is the current chat
+        is_current_chat = chat_id == SessionState.get_current_chat()
+        
         with st.container():
             cols = st.columns([4, 1, 1, 1])
             
             # Chat name and select button
             with cols[0]:
-                if st.button(f"{chat.name}", key=f"chat_{chat_id}", help=timestamp, use_container_width=True):
+                button_style = "primary" if is_current_chat else "secondary"
+                if st.button(f"{chat.name}", key=f"chat_{chat_id}", help=timestamp, use_container_width=True, type=button_style):
                     SessionState.set_current_chat(chat_id)
                     st.rerun()
             
