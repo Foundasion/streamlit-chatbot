@@ -56,7 +56,16 @@ if chat:
     for message in messages:
         with st.chat_message(message.role):
             st.markdown(message.content)
-            st.caption(f"{message.created_at.strftime('%I:%M %p')}")
+            if message.role != 'assistant':
+                st.caption(f"{message.created_at.strftime('%I:%M %p')}")
+            else:
+                # Add timestamp and action buttons
+                cols = st.columns([0.7, 0.045, 0.045, 0.045, 0.045])
+                cols[0].caption(f"{message.created_at.strftime('%I:%M %p')}")
+                cols[1].button("👍", key=f"like_{message.id}")
+                cols[2].button("👎", key=f"dislike_{message.id}")
+                cols[3].button("📋", key=f"copy_{message.id}")
+                cols[4].button("🔄", key=f"regen_{message.id}")
     
     # Chat input
     if prompt := st.chat_input("What's on your mind?"):
@@ -76,53 +85,75 @@ if chat:
         
         # Get and display assistant response
         with st.chat_message("assistant"):
+            # Create placeholders for message and stop button
+            stop_button_placeholder = st.empty()
             message_placeholder = st.empty()
-            with st.spinner("Thinking..."):
-                # Get response from LLM
-                response = llm.get_response(
-                    prompt,
-                    context=[{
-                        "role": m.role,
-                        "content": m.content
-                    } for m in messages]
-                )
+            
+            # Initialize response accumulator
+            full_response = []
+            
+            # Initialize stop generation state
+            if "stop_generation" not in st.session_state:
+                st.session_state.stop_generation = False
+            
+            # Create stop button
+            if stop_button_placeholder.button("Stop Generating", key="stop_button"):
+                st.session_state.stop_generation = True
+            
+            def update_message(chunk: str):
+                if not st.session_state.stop_generation:
+                    full_response.append(chunk)
+                    message_placeholder.markdown("".join(full_response))
+            
+            # Get streaming response from LLM
+            llm.get_streaming_response(
+                prompt,
+                context=[{
+                    "role": m.role,
+                    "content": m.content
+                } for m in messages],
+                callback=update_message
+            )
+            
+            # Remove stop button after generation
+            stop_button_placeholder.empty()
+            
+            # Add assistant message to database
+            response_text = "".join(full_response)
+            if st.session_state.stop_generation:
+                response_text += "\n\n*Generation stopped by user*"
                 
-                # Add assistant message
-                assistant_message = DatabaseManager.add_message(
-                    current_chat_id,
-                    "assistant",
-                    response,
-                    turn_number
-                )
-                
-                # Display response
-                message_placeholder.markdown(response)
-                st.caption(f"{assistant_message.created_at.strftime('%I:%M %p')}")
-        
-        # Update counters
-        SessionState.increment_counters("assistant")
-        
-        # Check if chat should be named or renamed
-        updated_chat = DatabaseManager.get_chat(current_chat_id)
-        if should_name_chat(messages, updated_chat):
-            # Get chat name from LLM
-            chat_context = "\n".join([
-                f"{m.role}: {m.content}" for m in 
-                DatabaseManager.get_messages(current_chat_id)
-            ])
-            name_prompt = f"""Based on this conversation, suggest a short (2-5 words) name for the chat that captures its main topic or purpose. Only respond with the name, nothing else:
+            assistant_message = DatabaseManager.add_message(
+                current_chat_id,
+                "assistant",
+                response_text,
+                turn_number
+            )
+            
+            # Update counters
+            SessionState.increment_counters("assistant")
+            
+            # Check if chat should be named or renamed
+            updated_chat = DatabaseManager.get_chat(current_chat_id)
+            if should_name_chat(messages, updated_chat):
+                # Get chat name from LLM
+                chat_context = "\n".join([
+                    f"{m.role}: {m.content}" for m in 
+                    DatabaseManager.get_messages(current_chat_id)
+                ])
+                name_prompt = f"""Based on this conversation, suggest a short (2-5 words) name for the chat that captures its main topic or purpose. Only respond with the name, nothing else:
 
 {chat_context}"""
-            chat_name = llm.get_response(name_prompt, []).strip()
+                chat_name = llm.get_response(name_prompt, []).strip()
+                
+                # Update chat name
+                DatabaseManager.update_chat(
+                    current_chat_id,
+                    name=chat_name,
+                    is_named_by_llm=True
+                )
             
-            # Update chat name
-            DatabaseManager.update_chat(
-                current_chat_id,
-                name=chat_name,
-                is_named_by_llm=True
-            )
-        
-        st.rerun()
+            st.rerun()
 else:
     st.info("Select a chat from the sidebar or create a new one to get started.")
 
