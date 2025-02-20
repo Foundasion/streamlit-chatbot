@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
 from contextlib import contextmanager
-from typing import Generator, Optional
-from sqlalchemy import create_engine, select
+from typing import Generator, Optional, List
+from sqlalchemy import create_engine, select, and_
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.sql.expression import desc
-from .models import Base, User, Chat, Message
+from .models import Base, User, Chat, Message, MessageReaction
 
 # Get database URL from environment variable
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://localhost/streamlit_chatbot')
@@ -108,15 +108,43 @@ class DatabaseManager:
             db.commit()
 
     @staticmethod
-    def get_messages(chat_id: str):
-        """Get all messages for a chat"""
+    def get_messages(chat_id: str, include_regenerated: bool = False):
+        """Get messages for a chat, optionally including regenerated versions"""
         with get_db() as db:
-            return db.query(Message).filter(
-                Message.chat_id == chat_id
-            ).order_by(Message.created_at).all()
+            if include_regenerated:
+                # Get all messages including regenerated ones
+                return db.query(Message).filter(
+                    Message.chat_id == chat_id
+                ).order_by(Message.created_at).all()
+            else:
+                # Get only the latest version of each message
+                # First, get all original messages (not regenerated from others)
+                base_messages = db.query(Message).filter(
+                    Message.chat_id == chat_id,
+                    Message.original_message_id == None
+                ).all()
+                
+                # For each regenerated message, get its latest version
+                messages = []
+                for msg in base_messages:
+                    if msg.is_regenerated:
+                        # Get the latest regeneration of this message
+                        latest = db.query(Message).filter(
+                            Message.original_message_id == msg.id
+                        ).order_by(desc(Message.created_at)).first()
+                        if latest:
+                            messages.append(latest)
+                        else:
+                            messages.append(msg)
+                    else:
+                        messages.append(msg)
+                
+                # Sort by original creation time
+                messages.sort(key=lambda m: m.created_at)
+                return messages
 
     @staticmethod
-    def add_message(chat_id: str, role: str, content: str, turn_number: int) -> Message:
+    def add_message(chat_id: str, role: str, content: str, turn_number: int, original_message_id: Optional[str] = None) -> Message:
         """Add a new message to a chat"""
         with get_db() as db:
             # Create message with current timestamp
@@ -126,7 +154,9 @@ class DatabaseManager:
                 role=role,
                 content=content,
                 turn_number=turn_number,
-                created_at=now
+                created_at=now,
+                original_message_id=original_message_id,
+                is_regenerated=False
             )
             db.add(message)
             
@@ -138,3 +168,84 @@ class DatabaseManager:
             db.commit()
             db.refresh(message)
             return message
+
+    @staticmethod
+    def get_message(message_id: str) -> Optional[Message]:
+        """Get a specific message by ID"""
+        with get_db() as db:
+            return db.query(Message).filter(Message.id == message_id).first()
+
+    @staticmethod
+    def mark_message_regenerated(message_id: str) -> Optional[Message]:
+        """Mark a message as regenerated"""
+        with get_db() as db:
+            message = db.query(Message).filter(Message.id == message_id).first()
+            if message:
+                message.is_regenerated = True
+                db.commit()
+                db.refresh(message)
+            return message
+
+    @staticmethod
+    def get_reaction(message_id: str, user_id: str) -> Optional[MessageReaction]:
+        """Get a user's reaction to a specific message"""
+        with get_db() as db:
+            return db.query(MessageReaction).filter(
+                and_(
+                    MessageReaction.message_id == message_id,
+                    MessageReaction.user_id == user_id
+                )
+            ).first()
+
+    @staticmethod
+    def add_or_update_reaction(message_id: str, user_id: str, reaction_type: str) -> MessageReaction:
+        """Add or update a reaction to a message"""
+        with get_db() as db:
+            # Check for existing reaction
+            reaction = db.query(MessageReaction).filter(
+                and_(
+                    MessageReaction.message_id == message_id,
+                    MessageReaction.user_id == user_id
+                )
+            ).first()
+
+            if reaction:
+                # Update existing reaction
+                if reaction.reaction_type != reaction_type:
+                    reaction.reaction_type = reaction_type
+                    reaction.created_at = datetime.utcnow()
+            else:
+                # Create new reaction
+                reaction = MessageReaction(
+                    message_id=message_id,
+                    user_id=user_id,
+                    reaction_type=reaction_type
+                )
+                db.add(reaction)
+
+            db.commit()
+            db.refresh(reaction)
+            return reaction
+
+    @staticmethod
+    def remove_reaction(message_id: str, user_id: str):
+        """Remove a user's reaction from a message"""
+        with get_db() as db:
+            db.query(MessageReaction).filter(
+                and_(
+                    MessageReaction.message_id == message_id,
+                    MessageReaction.user_id == user_id
+                )
+            ).delete()
+            db.commit()
+
+    @staticmethod
+    def get_last_assistant_message(chat_id: str) -> Optional[Message]:
+        """Get the last assistant message in a chat"""
+        with get_db() as db:
+            return db.query(Message).filter(
+                and_(
+                    Message.chat_id == chat_id,
+                    Message.role == "assistant"
+                )
+            ).order_by(desc(Message.created_at)).first()

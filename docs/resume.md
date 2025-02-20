@@ -2,6 +2,21 @@
 
 ## Progress Updates
 
+### February 19, 2025 11:15 PM
+
+#### Completed
+1. Message Action Button Functionality ✓
+   - Implemented like/dislike system
+     * Added proper button state management
+     * Fixed visual feedback for active state
+     * Stored reactions in database
+   - Added copy functionality with clipboard support (couldn't figure out how to make it work)
+   - Enhanced message regeneration
+     * Added version tracking in database
+     * Preserved message history
+     * Added regeneration indicator in UI
+     * Improved user feedback
+
 ### February 19, 2025 2:30 PM
 
 #### Completed
@@ -26,13 +41,7 @@
    - Aligned buttons with timestamps
 
 #### Next Steps
-1. Chat Name Management
-   - Add chat name button in header
-   - Implement edit dialog
-   - Remove sidebar edit functionality
-   - Improve visual feedback
-
-2. Action Button Implementation
+1. Action Button Implementation
    - Add functionality to like/dislike buttons
    - Implement copy feature
    - Enable response regeneration
@@ -128,6 +137,21 @@
    - CRUD operations and search functionality
    - Comprehensive test suite
    - Documentation and setup guides
+
+### Future Feature: Chat Timelines
+The database includes support for branching chat timelines, which will allow:
+- Multiple conversation paths from a single point
+- Exploring different AI responses
+- Comparing different conversation directions
+- Maintaining context across branches
+
+Database Structure:
+- timelines table with branch tracking
+- messages linked to specific timelines
+- parent-child timeline relationships
+- active timeline tracking
+
+This feature is currently not in use but the database schema is preserved for future implementation.
 
 ### Next Phase: UI Components & App Integration (Phase 1 - Part 2)
 

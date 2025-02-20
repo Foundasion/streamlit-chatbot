@@ -5,6 +5,7 @@ from typing import Optional
 import json
 import streamlit as st
 from database.database import DatabaseManager
+from database.models import Message
 from .state import SessionState
 
 def render_sidebar():
@@ -173,11 +174,128 @@ def render_profile_bar():
         if st.button(f"{user_info['name']}", key="profile_button", use_container_width=True):
             edit_profile_dialog(user_info)
 
+def handle_reaction(message_id: str, reaction_type: str):
+    """Handle like/dislike reactions"""
+    user_id = SessionState.get_user_info()["id"]
+    
+    # Get current reaction
+    current_reaction = DatabaseManager.get_reaction(message_id, user_id)
+    
+    if current_reaction and current_reaction.reaction_type == reaction_type:
+        # Remove reaction if clicking the same button again
+        DatabaseManager.remove_reaction(message_id, user_id)
+    else:
+        # Add or update reaction
+        DatabaseManager.add_or_update_reaction(message_id, user_id, reaction_type)
+    
+    st.rerun()
+
+def handle_regeneration(message_id: str):
+    """Handle message regeneration"""
+    from llm import get_llm_provider
+    
+    message = DatabaseManager.get_message(message_id)
+    if message and message.role == "assistant":
+        # Mark current message as regenerated
+        DatabaseManager.mark_message_regenerated(message_id)
+        
+        # Get the user's message that prompted this response
+        messages = DatabaseManager.get_messages(message.chat_id)
+        user_message = None
+        context_messages = []
+        
+        # Build context from messages up to the user's message
+        for msg in messages:
+            if msg.id == message_id:
+                break
+            context_messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+            if msg.role == "user":
+                user_message = msg
+        
+        if user_message:
+            # Create a placeholder for the new response
+            placeholder = st.empty()
+            response_text = []
+            
+            def update_response(chunk: str):
+                response_text.append(chunk)
+                placeholder.markdown("".join(response_text))
+            
+            # Get new response from LLM
+            llm = get_llm_provider()
+            llm.get_streaming_response(
+                user_message.content,
+                context=context_messages,
+                callback=update_response
+            )
+            
+            # Save new message
+            DatabaseManager.add_message(
+                chat_id=message.chat_id,
+                role="assistant",
+                content="".join(response_text),
+                turn_number=message.turn_number,
+                original_message_id=message_id
+            )
+            st.rerun()
+
 def format_message(role: str, content: str) -> str:
     """Format a message for display."""
     if role == "user":
         return f"You: {content}"
     return f"Assistant: {content}"
+
+def render_chat_messages(chat_id: str):
+    """Render all messages in a chat with action buttons."""
+    # Get only the latest version of each message
+    messages = DatabaseManager.get_messages(chat_id, include_regenerated=False)
+    
+    # Find last assistant message
+    last_assistant_message = DatabaseManager.get_last_assistant_message(chat_id)
+    
+    for message in messages:
+        with st.chat_message(message.role):
+            # Render message content
+            st.markdown(message.content)
+            
+            # Add timestamp and actions in a row
+            cols = st.columns([10, 1, 1, 1], vertical_alignment='center')
+            
+            # Timestamp with regeneration indicator
+            timestamp = message.created_at.strftime("%I:%M %p")
+            if message.created_at.date() != datetime.now().date():
+                timestamp = message.created_at.strftime("%b %d, %I:%M %p")
+            if message.original_message_id:
+                timestamp += " (Regenerated :arrows_counterclockwise:)"
+            cols[0].caption(timestamp)
+            
+            # Add action buttons for assistant messages
+            if message.role == "assistant":
+                is_last_assistant = last_assistant_message and message.id == last_assistant_message.id
+                
+                # Get current reaction
+                reaction = DatabaseManager.get_reaction(message.id, SessionState.get_user_info()["id"])
+                
+                # Like button
+                button_style = "primary" if reaction and reaction.reaction_type == "like" else "secondary"
+                if cols[1].button("👍", key=f"like_{message.id}", type=button_style):
+                    handle_reaction(message.id, "like")
+                
+                # Dislike button
+                button_style = "primary" if reaction and reaction.reaction_type == "dislike" else "secondary"
+                if cols[2].button("👎", key=f"dislike_{message.id}", type=button_style):
+                    handle_reaction(message.id, "dislike")
+                
+                # Regenerate button
+                if is_last_assistant:
+                    if cols[3].button("🔄", key=f"regen_{message.id}"):
+                        handle_regeneration(message.id)
+                else:
+                    cols[3].button("🔄", key=f"regen_{message.id}", disabled=True, 
+                                help="Regeneration only available for the last assistant message")
 
 def should_name_chat(messages, chat) -> bool:
     """Check if a chat should be named based on message count."""

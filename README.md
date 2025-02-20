@@ -69,19 +69,23 @@ A lightweight, modular chatbot interface built with Streamlit that connects to C
      * Improved search bar appearance
      * Cleaner chat list presentation
 
+### Completed Features ✓
+1. Message Actions
+   - Like/dislike system with state management
+   - Message regeneration with version tracking
+   - Copy functionality (in progress)
+   - Visual feedback and indicators
+
 ### Needs Implementation
 1. UI Enhancements
-   - Chat Name Management
-     * Add chat name button in header
-     * Move edit functionality from sidebar
-   - Message Action Functionality
-     * Implement like/dislike system
-     * Add copy feature
-     * Enable response regeneration
    - Frontend Styling
      * Improve overall appearance
      * Enhance visual hierarchy
      * Refine component layouts
+   - Copy Feature
+     * Fix clipboard integration
+     * Add success indicators
+     * Handle code blocks properly
 
 2. Search Enhancements
    - Real-time filtering

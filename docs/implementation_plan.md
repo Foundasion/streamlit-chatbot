@@ -22,6 +22,9 @@ Simple checklist for validating functionality:
 - [ ] No memory leaks during long sessions
 - [✓] Export preserves all chat data
 - [ ] Error messages are clear and helpful
+- [✓] Message reactions persist correctly
+- [✓] Message regeneration maintains history
+- [ ] Copy functionality works reliably
 
 ## Current Implementation Status (February 19, 2025 12:00 AM)
 
@@ -59,10 +62,11 @@ Simple checklist for validating functionality:
 
 6. Message Actions ✓
    - Action buttons UI implementation
-   - Like/dislike buttons
-   - Copy functionality
-   - Regenerate option
-   - Timestamp integration
+   - Like/dislike system with state management
+   - Message regeneration with version tracking
+   - Copy functionality (in progress)
+   - Visual feedback and indicators
+   - Timestamp integration with regeneration status
 
 ### Immediate Development Focus
 1. UI Navigation Enhancement ✓

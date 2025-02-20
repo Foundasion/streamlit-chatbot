@@ -12,7 +12,7 @@ st.set_page_config(
 from llm import get_llm_provider
 from database.database import DatabaseManager
 from ui.state import SessionState
-from ui.components import render_sidebar, format_message, should_name_chat
+from ui.components import render_sidebar, format_message, should_name_chat, render_chat_messages
 
 # Initialize session state
 SessionState.init_state()
@@ -83,20 +83,8 @@ if chat:
     # Get chat messages
     messages = DatabaseManager.get_messages(current_chat_id)
     
-    # Display messages
-    for message in messages:
-        with st.chat_message(message.role):
-            st.markdown(message.content)
-            if message.role != 'assistant':
-                st.caption(f"{message.created_at.strftime('%I:%M %p')}")
-            else:
-                # Add timestamp and action buttons
-                cols = st.columns([0.7, 0.045, 0.045, 0.045, 0.045])
-                cols[0].caption(f"{message.created_at.strftime('%I:%M %p')}")
-                cols[1].button("👍", key=f"like_{message.id}")
-                cols[2].button("👎", key=f"dislike_{message.id}")
-                cols[3].button("📋", key=f"copy_{message.id}")
-                cols[4].button("🔄", key=f"regen_{message.id}")
+    # Display messages with action buttons
+    render_chat_messages(current_chat_id)
     
     # Chat input
     if prompt := st.chat_input("What's on your mind?"):
